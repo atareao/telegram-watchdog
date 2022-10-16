@@ -1,11 +1,10 @@
-use actix_web::{get, post, put, delete, web, Error, HttpResponse, http::StatusCode,
-                http::header::ContentType, HttpRequest,
-                error::{ErrorBadRequest, ErrorNotFound}};
+use actix_web::{get, post, Error, HttpResponse, http::header::ContentType,
+                HttpRequest};
 use serde::Serialize;
 use serde_json::{Value, json};
-use std::{env, str::FromStr, thread};
-use crate::{utils::Mail, mailer::Mailer};
-use log::{info, warn, error};
+use std::{env, str::FromStr};
+use log::{info, error};
+use crate::{utils::Mail, mailrelay::MailRelay};
 
 #[derive(Serialize)]
 struct Respuesta{
@@ -66,23 +65,20 @@ pub async fn hook(req: HttpRequest, content: String) -> Result<HttpResponse, Err
                     let maybe = message.get("text").unwrap().as_str().unwrap();
                     let mail = Mail::parse_to(maybe);
                     if mail.is_some(){
-                        let server = env::var("SERVER").unwrap();
-                        let server_username = env::var("SERVER_USERNAME").unwrap();
-                        let server_password = env::var("SERVER_PASSWORD").unwrap();
-                        let mailer = Mailer::new(&server, &server_username, &server_password);
-                        thread::spawn(move || {
-                            info!("I'm going to send message");
-                            let mail_content = mail.unwrap();
-                            match mailer.send(&mail_content){
-                                Ok(result) => {
-                                    info!("Send message: {}", result.code());
-                                },
-                                Err(e) => {
-                                    error!("Mail: {}", mail_content);
-                                    error!("No pude enviar el mensaje: {}", e)
-                                }
-                            };
-                        });
+                        info!("I'm going to send message");
+                        let mail_content = mail.unwrap();
+                        let account = env::var("MAILRELAY_ACCOUNT").unwrap();
+                        let token = env::var("MAILRELAY_TOKEN").unwrap();
+                        let mailrelay = MailRelay::new(&account, &token);
+                        match mailrelay.send(&mail_content).await{
+                            Ok(result) => {
+                                info!("Send message: {}", result.status());
+                            },
+                            Err(e) => {
+                                error!("No pude enviar el mensaje: {}", e);
+                                error!("Mail: {}", mail_content);
+                            }
+                        };
                     }
                 },
             }

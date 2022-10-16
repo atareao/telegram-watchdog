@@ -1,7 +1,7 @@
 mod routes;
-mod mailer;
 mod telegram;
 mod utils;
+mod mailrelay;
 
 use dotenv::dotenv;
 use std::env;
@@ -16,9 +16,8 @@ async fn main() -> std::io::Result<()> {
     let log_level = env::var("LOG_LEVEL").expect("LOG_LEVEL not set");
     let port = env::var("PORT").expect("PORT not set");
     let _token = env::var("TOKEN").expect("TOKEN not set");
-    let _server = env::var("SERVER").expect("SERVER not set");
-    let _server_username = env::var("SERVER_USERNAME").expect("SERVER_USERNAME not set");
-    let _server_password = env::var("SERVER_PASSWORD").expect("SERVER_PASSWORD not set");
+    let _mailrelay_account = env::var("MAILRELAY_ACCOUNT").expect("MAILRELAY_ACCOUNT not set");
+    let _mailrelay_token = env::var("MAILRELAY_TOKEN").expect("MAILRELAY_TOKEN not set");
     let _from = env::var("FROM").expect("FROM not set");
 
     env_logger::init_from_env(Env::default().default_filter_or(log_level));
