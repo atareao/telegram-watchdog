@@ -1,0 +1,13 @@
+GET http://localhost:{{PORT}}/
+
+GET http://localhost:{{PORT}}/status
+
+POST http://localhost:{{PORT}}/hook
+Content-Type: application/json
+
+{
+    "category": "categoría",
+    "content": "vacio"
+}
+
+GET https://api.telegram.org/bot{{TG_TOKEN}}/setWebhook?url={{URL}}/hook
