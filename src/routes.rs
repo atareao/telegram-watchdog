@@ -4,7 +4,8 @@ use serde::Serialize;
 use serde_json::{Value, json};
 use std::{env, str::FromStr};
 use log::{info, error};
-use crate::{utils::Mail, mailrelay::MailRelay};
+use crate::{utils::Mail, mailrelay::MailRelay, mailer::Mailer};
+use std::thread;
 
 #[derive(Serialize)]
 struct Respuesta{
@@ -66,6 +67,24 @@ pub async fn hook(req: HttpRequest, content: String) -> Result<HttpResponse, Err
                     let mail = Mail::parse_to(maybe);
                     if mail.is_some(){
                         info!("I'm going to send message");
+                        thread::spawn(||{
+                            let mail_content = mail.unwrap();
+                            let server = env::var("MAIL_SERVER").unwrap();
+                            let username = env::var("MAIL_USER").unwrap();
+                            let password = env::var("MAIL_PASSWORD").unwrap();
+                            let mailer = Mailer::new(&server, &username, &password);
+                            match mailer.send(&mail_content) {
+                                Ok(response) => {
+                                    info!("Send message: {}", response.code());
+                                },
+                                Err(e) => {
+                                    error!("No pude enviar el mensaje: {}", e);
+                                    error!("Mail: {}", &mail_content);
+                                },
+                            }
+
+                        });
+                        /*
                         let mail_content = mail.unwrap();
                         let account = env::var("MAILRELAY_ACCOUNT").unwrap();
                         let token = env::var("MAILRELAY_TOKEN").unwrap();
@@ -79,6 +98,7 @@ pub async fn hook(req: HttpRequest, content: String) -> Result<HttpResponse, Err
                                 error!("Mail: {}", mail_content);
                             }
                         };
+                        */
                     }
                 },
             }
